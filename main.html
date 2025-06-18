@@ -1,0 +1,218 @@
+<html>
+<head>
+	<script>
+		//function that display value
+		function dis(val) {
+			document.getElementById("result").value += val;
+		}
+
+		let equalClickCount = 0;
+
+		function showPongGame() {
+			// Create overlay
+			const overlay = document.createElement('div');
+			overlay.id = 'pong-overlay';
+			overlay.style.position = 'fixed';
+			overlay.style.top = '0';
+			overlay.style.left = '0';
+			overlay.style.width = '100vw';
+			overlay.style.height = '100vh';
+			overlay.style.background = 'rgba(0,0,0,0.85)';
+			overlay.style.display = 'flex';
+			overlay.style.justifyContent = 'center';
+			overlay.style.alignItems = 'center';
+			overlay.style.zIndex = '9999';
+			overlay.innerHTML = `
+				<div style="position:relative;">
+					<canvas id='pong-canvas' width='400' height='300' style='background:#111;display:block;'></canvas>
+					<button onclick="closePongGame()" style="position:absolute;top:5px;right:5px;z-index:2;">Close</button>
+				</div>
+			`;
+			document.body.appendChild(overlay);
+			startPong();
+		}
+
+		function closePongGame() {
+			const overlay = document.getElementById('pong-overlay');
+			if (overlay) overlay.remove();
+		}
+
+		// Pong game logic
+		function startPong() {
+			const canvas = document.getElementById('pong-canvas');
+			const ctx = canvas.getContext('2d');
+
+			// Game variables
+			let paddleHeight = 60, paddleWidth = 8;
+			let playerY = (canvas.height - paddleHeight) / 2;
+			let aiY = (canvas.height - paddleHeight) / 2;
+			let ballX = canvas.width / 2, ballY = canvas.height / 2;
+			let ballRadius = 7;
+			let ballSpeedX = 3, ballSpeedY = 2;
+			let upPressed = false, downPressed = false;
+			let animationFrame;
+
+			// Control with up/down arrow keys
+			document.onkeydown = function(e) {
+				if (e.key === "ArrowUp") upPressed = true;
+				if (e.key === "ArrowDown") downPressed = true;
+			};
+			document.onkeyup = function(e) {
+				if (e.key === "ArrowUp") upPressed = false;
+				if (e.key === "ArrowDown") downPressed = false;
+			};
+
+			function drawPaddle(x, y) {
+				ctx.fillStyle = "#0f0";
+				ctx.fillRect(x, y, paddleWidth, paddleHeight);
+			}
+
+			function drawBall(x, y) {
+				ctx.beginPath();
+				ctx.arc(x, y, ballRadius, 0, Math.PI * 2);
+				ctx.fillStyle = "#fff";
+				ctx.fill();
+				ctx.closePath();
+			}
+
+			function draw() {
+				ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+				// Draw paddles
+				drawPaddle(5, playerY);
+				drawPaddle(canvas.width - paddleWidth - 5, aiY);
+				// Draw ball
+				drawBall(ballX, ballY);
+
+				// Move player paddle
+				if (upPressed && playerY > 0) playerY -= 4;
+				if (downPressed && playerY < canvas.height - paddleHeight) playerY += 4;
+
+				// Move AI paddle
+				if (aiY + paddleHeight / 2 < ballY) aiY += 2.2;
+				else if (aiY + paddleHeight / 2 > ballY) aiY -= 2.2;
+				aiY = Math.max(0, Math.min(aiY, canvas.height - paddleHeight));
+
+				// Move ball
+				ballX += ballSpeedX;
+				ballY += ballSpeedY;
+
+				// Ball collision with top/bottom
+				if (ballY - ballRadius < 0 || ballY + ballRadius > canvas.height) {
+					ballSpeedY = -ballSpeedY;
+				}
+
+				// Ball collision with player paddle
+				if (
+					ballX - ballRadius < 5 + paddleWidth &&
+					ballY > playerY &&
+					ballY < playerY + paddleHeight
+				) {
+					ballSpeedX = -ballSpeedX;
+					ballX = 5 + paddleWidth + ballRadius;
+				}
+
+				// Ball collision with AI paddle
+				if (
+					ballX + ballRadius > canvas.width - paddleWidth - 5 &&
+					ballY > aiY &&
+					ballY < aiY + paddleHeight
+				) {
+					ballSpeedX = -ballSpeedX;
+					ballX = canvas.width - paddleWidth - 5 - ballRadius;
+				}
+
+				// Ball out of bounds (reset)
+				if (ballX - ballRadius < 0 || ballX + ballRadius > canvas.width) {
+					ballX = canvas.width / 2;
+					ballY = canvas.height / 2;
+					ballSpeedX = -ballSpeedX;
+					ballSpeedY = 2 * (Math.random() > 0.5 ? 1 : -1);
+				}
+
+				animationFrame = requestAnimationFrame(draw);
+			}
+
+			draw();
+
+			// Clean up event listeners and animation frame when overlay is closed
+			const overlay = document.getElementById('pong-overlay');
+			overlay.addEventListener('remove', function() {
+				cancelAnimationFrame(animationFrame);
+				document.onkeydown = null;
+				document.onkeyup = null;
+			});
+		}
+
+		//function that evaluates the digit and return result
+		function solve() {
+			let x = document.getElementById("result").value;
+			let y = eval(x);
+			document.getElementById("result").value = y;
+			equalClickCount++;
+			if (equalClickCount === 5) {
+				showPongGame();
+				equalClickCount = 0;
+			}
+		}
+
+		//function that clear the display
+		function clr() {
+			document.getElementById("result").value = "";
+		}
+	</script>
+	<!-- for styling -->
+	<style>
+		.title{
+			margin-bottom: 10px;
+			text-align:center;
+			width: 400px;
+			color:rgba(0, 128, 0, 0);
+			border: solid black 2px;
+		}
+		input[type="button"] {
+			background-color:rgba(0, 128, 0, 0);
+			color: black;
+			border: solid black 2px;
+			width:100%
+		}
+		input[type="text"] {
+			background-color:hsl(0, 0%, 100%);
+			border: solid rgba(0, 0, 0, 0) 2px;
+			width:20%
+		}
+	</style>
+</head>
+<body>
+	<table border="1">
+		<tr>
+			<td colspan="3"><input type="text" id="result"/></td>
+			<td><input type="button" value="c" onclick="clr()"/> </td>
+		</tr>
+		<tr>
+			<td><input type="button" value="1" onclick="dis('1')"/> </td>
+			<td><input type="button" value="2" onclick="dis('2')"/> </td>
+			<td><input type="button" value="3" onclick="dis('3')"/> </td>
+			<td><input type="button" value="/" onclick="dis('/')"/> </td>
+		</tr>
+		<tr>
+			<td><input type="button" value="4" onclick="dis('4')"/> </td>
+			<td><input type="button" value="5" onclick="dis('5')"/> </td>
+			<td><input type="button" value="6" onclick="dis('6')"/> </td>
+			<td><input type="button" value="-" onclick="dis('-')"/> </td>
+		</tr>
+		<tr>
+			<td><input type="button" value="7" onclick="dis('7')"/> </td>
+			<td><input type="button" value="8" onclick="dis('8')"/> </td>
+			<td><input type="button" value="9" onclick="dis('9')"/> </td>
+			<td><input type="button" value="+" onclick="dis('+')"/> </td>
+		</tr>
+		<tr>
+			<td><input type="button" value="." onclick="dis('.')"/> </td>
+			<td><input type="button" value="0" onclick="dis('0')"/> </td>
+			<td><input type="button" value="=" onclick="solve()"/> </td>
+			<td><input type="button" value="*" onclick="dis('*')"/> </td>
+		</tr>
+	</table>
+</body>
+</html>
